@@ -74,7 +74,7 @@ getTile :: (MonadIO m, FromTile a) => Z -> X -> Y -> MbtilesT m (Maybe a)
 getTile (Z z) (X x) (Y y) = MbtilesT $ do
   rs <- r <$> ask
   fmap unwrapTile <$> liftIO (do
-    bindNamed rs [":Z" := z, ":col" := x, ":row" := y]
+    bindNamed rs [":zoom" := z, ":col" := x, ":row" := y]
     res <- nextRow rs
     reset rs
     return res)
