@@ -29,8 +29,11 @@ import           Database.SQLite.Simple
 import           System.Directory
 
 -- | Given a path to an MBTiles file, run the 'MbtilesT' action.
--- This will open a connection the MBTiles file, run the action,
+-- This will open a connection to the MBTiles file, run the action,
 -- and then close the connection.
+-- Some validation will be performed first. Of course, we will check if the
+-- MBTiles file actually exists. If it does, we need to validate its schema according
+-- to the MBTiles spec.
 runMbtilesT :: (MonadIO m) => FilePath -> MbtilesT m a -> m (Either MBTilesError a)
 runMbtilesT mbtilesPath mbt = do
   m <- validateMBTiles mbtilesPath
