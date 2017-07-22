@@ -13,6 +13,12 @@ data SqlData = SqlData {
   , conn :: Connection
   }
 
+-- | Data type representing various errors that could occur
+-- when opening an MBTiles file.
+data MBTilesError = DoesNotExist  -- ^ The MBTiles file does not exist.
+                  | InvalidSchema -- ^ The MBTiles schema is invalid according to the spec.
+                  deriving (Show, Eq)
+
 -- | MbtilesT monad that will run actions on an MBTiles file.
 newtype MbtilesT m a = MbtilesT {
     unMbtilesT :: ReaderT SqlData m a
@@ -22,7 +28,7 @@ newtype MbtilesT m a = MbtilesT {
 type Mbtiles a = MbtilesT IO a
 
 -- | Newtype wrapper around map zoom level.
-newtype Zoom = Z Int deriving ToField
+newtype Z = Z Int deriving ToField
 
 -- | Newtype wrapper around a tile's x-coordinate.
 newtype X = X Int deriving ToField
