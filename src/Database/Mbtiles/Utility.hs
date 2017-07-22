@@ -52,5 +52,5 @@ columnChecker tableName cols err conn = do
   cs <- getColumnNames conn tableName
   if cs /= cols then return $ Left err else return $ Right conn
 
-getMetadata :: (MonadIO m) => Connection -> m MbtilesMeta
-getMetadata conn = M.fromList <$> liftIO (query_ conn getMetadataQuery)
+getDBMetadata :: (MonadIO m) => Connection -> m MbtilesMeta
+getDBMetadata conn = M.fromList <$> liftIO (query_ conn getMetadataQuery)

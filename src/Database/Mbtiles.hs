@@ -2,6 +2,7 @@
 
 module Database.Mbtiles
 (
+  -- * Types
   MbtilesT
 , Mbtiles
 , MbtilesMeta
@@ -9,21 +10,35 @@ module Database.Mbtiles
 , Z(..)
 , X(..)
 , Y(..)
+
+  -- * The MbtilesT monad transformer
 , runMbtilesT
 , runMbtiles
+
+  -- * Mbtiles read/write functionality
 , getTile
 , writeTile
 , writeTiles
 , updateTile
 , updateTiles
+
+  -- * Mbtiles metadata functionality
+, getMetadata
+, getName
+, getType
+, getVersion
+, getDescription
+, getFormat
 ) where
 
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import qualified Data.ByteString.Lazy     as BL
-import qualified Data.HashMap.Strict      as M
+import           Data.HashMap.Strict      ((!))
+import qualified Data.HashMap.Strict      as M hiding ((!))
 import           Data.Monoid
+import           Data.Text                (Text)
 import           Database.Mbtiles.Query
 import           Database.Mbtiles.Types
 import           Database.Mbtiles.Utility
@@ -75,7 +90,7 @@ validateMBTiles mbtilesPath = liftIO $
     metadata = columnChecker metadataTable metadataColumns InvalidMetadata
     tiles = columnChecker tilesTable tilesColumns InvalidTiles
     metadataValues c = do
-      m <- getMetadata c
+      m <- getDBMetadata c
       if all (`M.member` m) requiredMeta
         then return $ Right (c, m)
         else return $ Left InvalidMetadata
@@ -95,6 +110,31 @@ getTile (Z z) (X x) (Y y) = MbtilesT $ do
     reset rs
     return res)
   where unwrapTile (Only bs) = fromTile bs
+
+-- | Returns the 'MbtilesMeta' that was found in the MBTiles file.
+-- This returns all of the currently available metadata for the MBTiles database.
+getMetadata :: (MonadIO m) => MbtilesT m MbtilesMeta
+getMetadata = MbtilesT $ reader meta
+
+-- | Helper function for getting the specified name of the MBTiles from metadata.
+getName :: (MonadIO m) => MbtilesT m Text
+getName = findMeta "name" <$> getMetadata
+
+-- | Helper function for getting the type of the MBTiles from metadata.
+getType :: (MonadIO m) => MbtilesT m Text
+getType = findMeta "type" <$> getMetadata
+
+-- | Helper function for getting the version of the MBTiles from metadata.
+getVersion :: (MonadIO m) => MbtilesT m Text
+getVersion = findMeta "version" <$> getMetadata
+
+-- | Helper function for getting the description of the MBTiles from metadata.
+getDescription :: (MonadIO m) => MbtilesT m Text
+getDescription = findMeta "description" <$> getMetadata
+
+-- | Helper function for getting the format of the MBTiles from metadata.
+getFormat :: (MonadIO m) => MbtilesT m Text
+getFormat = findMeta "format" <$> getMetadata
 
 -- | Write new tile data to the tile at the specified 'Z', 'X', and 'Y' parameters.
 -- This function assumes that the tile does not already exist.
@@ -122,3 +162,6 @@ execQueryOnTiles q ts = MbtilesT $ do
   liftIO $
     executeMany c q $
       map (\(z, x, y, t) -> (z, z, y, toTile t)) ts
+
+findMeta :: Text -> MbtilesMeta -> Text
+findMeta t m = m ! t
