@@ -24,3 +24,8 @@ validateTiles :: Assertion
 validateTiles = do
   e <- runMbtiles "./mbtiles/invalid_tiles.mbtiles" (return ())
   Left InvalidTiles @=? e
+
+validateMetadataValues :: Assertion
+validateMetadataValues = do
+  e <- runMbtiles "./mbtiles/missing_metadata.mbtiles" (return ())
+  Left InvalidMetadata @=? e

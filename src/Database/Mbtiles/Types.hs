@@ -7,14 +7,20 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BL
+import qualified Data.HashMap.Strict            as M
 import           Data.Text                      (Text)
 import           Database.SQLite.Simple         (Connection, Statement)
 import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.ToField
 
-data SqlData = SqlData {
-    r    :: Statement
-  , conn :: Connection
+-- | MBTiles files contain metadata in one of their tables. This is
+-- a type alias for a mapping between the metadata key and the metadata value.
+type MbtilesMeta = M.HashMap Text Text
+
+data MbtilesData = MbtilesData {
+    r    :: !Statement
+  , conn :: !Connection
+  , meta :: !MbtilesMeta
   }
 
 -- | Data type representing various errors that could occur
@@ -27,7 +33,7 @@ data MBTilesError = DoesNotExist    -- ^ The MBTiles file does not exist.
 
 -- | MbtilesT monad that will run actions on an MBTiles file.
 newtype MbtilesT m a = MbtilesT {
-    unMbtilesT :: ReaderT SqlData m a
+    unMbtilesT :: ReaderT MbtilesData m a
   } deriving (Functor, Applicative, Monad, MonadTrans)
 
 -- | Type specialization 'MbtilesT' to IO.
@@ -75,7 +81,7 @@ metadataTable, tilesTable :: Text
 metadataTable = "metadata"
 tilesTable = "tiles"
 
-metadataColumns, tilesColumns :: [Text]
+metadataColumns, tilesColumns, requiredMeta :: [Text]
 metadataColumns = [
     "name"
   , "value"
@@ -88,3 +94,10 @@ tilesColumns = [
   , "zoom_level"
   ]
 
+requiredMeta = [
+    "name"
+  , "type"
+  , "version"
+  , "description"
+  , "format"
+  ]

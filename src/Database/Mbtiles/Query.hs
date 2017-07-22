@@ -32,3 +32,6 @@ tableInfoQuery :: Text -> Query
 tableInfoQuery t = "PRAGMA table_info(" <>
                    Query t              <>
                    ")"
+
+getMetadataQuery :: Query
+getMetadataQuery = "select name, value from metadata"

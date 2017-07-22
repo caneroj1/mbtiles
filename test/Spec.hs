@@ -11,4 +11,5 @@ main = void $ runTestTT $ TestList [
   , TestCase validateSchema
   , TestCase validateMetadata
   , TestCase validateTiles
+  , TestCase validateMetadataValues
   ]

@@ -1,6 +1,7 @@
 module Database.Mbtiles.Utility where
 
 import           Control.Monad.IO.Class
+import qualified Data.HashMap.Strict    as M
 import           Data.List
 import           Data.Text              (Text)
 import           Database.Mbtiles.Query
@@ -36,9 +37,9 @@ snd6 :: (a, b, c, d, e, f) -> b
 snd6 (_, b, _, _, _, _) = b
 
 validator :: (MonadIO m)
-          => (Connection -> m (Either MBTilesError Connection))
+          => (Connection -> m (Either MBTilesError a))
           -> Either MBTilesError Connection
-          -> m (Either MBTilesError Connection)
+          -> m (Either MBTilesError a)
 validator = either (return . Left)
 
 columnChecker :: (MonadIO m)
@@ -50,3 +51,6 @@ columnChecker :: (MonadIO m)
 columnChecker tableName cols err conn = do
   cs <- getColumnNames conn tableName
   if cs /= cols then return $ Left err else return $ Right conn
+
+getMetadata :: (MonadIO m) => Connection -> m MbtilesMeta
+getMetadata conn = M.fromList <$> liftIO (query_ conn getMetadataQuery)

@@ -4,6 +4,7 @@ module Database.Mbtiles
 (
   MbtilesT
 , Mbtiles
+, MbtilesMeta
 , MBTilesError(..)
 , Z(..)
 , X(..)
@@ -21,6 +22,7 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import qualified Data.ByteString.Lazy     as BL
+import qualified Data.HashMap.Strict      as M
 import           Data.Monoid
 import           Database.Mbtiles.Query
 import           Database.Mbtiles.Types
@@ -39,25 +41,29 @@ runMbtilesT mbtilesPath mbt = do
   m <- validateMBTiles mbtilesPath
   either (return . Left) processMbt m
   where
-    mkSqlData c =
-      SqlData <$>
-        openStmt c getTileQuery <*>
-        pure c
-    closeAll SqlData{r = rs, conn = c} =
-      closeStmt rs >> closeConn c
-    processMbt c = do
-      s <- mkSqlData c
-      v <- runReaderT (unMbtilesT mbt) s
-      closeAll s
+    processMbt (c, d) = do
+      m <- mkMbtilesData c d
+      v <- runReaderT (unMbtilesT mbt) m
+      closeAll m
       return $ Right v
+    mkMbtilesData c d =
+      MbtilesData <$>
+        openStmt c getTileQuery <*>
+        pure c                  <*>
+        pure d
+    closeAll MbtilesData{r = rs, conn = c} =
+      closeStmt rs >> closeConn c
 
-validateMBTiles :: (MonadIO m) => FilePath -> m (Either MBTilesError Connection)
+type ValidationResult = (Connection, MbtilesMeta)
+
+validateMBTiles :: (MonadIO m) => FilePath -> m (Either MBTilesError ValidationResult)
 validateMBTiles mbtilesPath = liftIO $
   doesFileExist mbtilesPath >>=
   ifExistsOpen              >>=
   validator schema          >>=
   validator metadata        >>=
-  validator tiles
+  validator tiles           >>=
+  validator metadataValues
   where
     ifExistsOpen False = return $ Left DoesNotExist
     ifExistsOpen True  = Right <$> open mbtilesPath
@@ -68,6 +74,11 @@ validateMBTiles mbtilesPath = liftIO $
 
     metadata = columnChecker metadataTable metadataColumns InvalidMetadata
     tiles = columnChecker tilesTable tilesColumns InvalidTiles
+    metadataValues c = do
+      m <- getMetadata c
+      if all (`M.member` m) requiredMeta
+        then return $ Right (c, m)
+        else return $ Left InvalidMetadata
 
 -- | Specialized version of 'runMbtilesT' to run in the IO monad.
 runMbtiles :: FilePath -> Mbtiles a -> IO (Either MBTilesError a)
