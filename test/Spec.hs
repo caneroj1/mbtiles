@@ -10,4 +10,5 @@ main = void $ runTestTT $ TestList [
     TestCase validateFileDetection
   , TestCase validateSchema
   , TestCase validateMetadata
+  , TestCase validateTiles
   ]

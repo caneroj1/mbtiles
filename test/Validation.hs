@@ -16,4 +16,11 @@ validateSchema = do
   Left InvalidSchema @=? e
 
 validateMetadata :: Assertion
-validateMetadata = undefined
+validateMetadata = do
+  e <- runMbtiles "./mbtiles/invalid_metadata.mbtiles" (return ())
+  Left InvalidMetadata @=? e
+
+validateTiles :: Assertion
+validateTiles = do
+  e <- runMbtiles "./mbtiles/invalid_tiles.mbtiles" (return ())
+  Left InvalidTiles @=? e

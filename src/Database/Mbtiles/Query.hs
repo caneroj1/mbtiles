@@ -2,6 +2,8 @@
 
 module Database.Mbtiles.Query where
 
+import           Data.Monoid
+import           Data.Text              (Text)
 import           Database.SQLite.Simple
 
 getTileQuery :: Query
@@ -26,5 +28,7 @@ tableExistsQuery :: Query
 tableExistsQuery = " select count(name) from sqlite_master \
                    \ where type='table' AND name=?"
 
-tableInfoQuery :: Query
-tableInfoQuery = "PRAGMA table_info(?)"
+tableInfoQuery :: Text -> Query
+tableInfoQuery t = "PRAGMA table_info(" <>
+                   Query t              <>
+                   ")"

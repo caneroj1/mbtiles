@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 
 module Database.Mbtiles.Types where
 
@@ -6,6 +7,7 @@ import           Control.Monad.Reader
 import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BL
+import           Data.Text                      (Text)
 import           Database.SQLite.Simple         (Connection, Statement)
 import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.ToField
@@ -63,15 +65,17 @@ instance FromTile BL.ByteString where
   fromTile = id
 
 newtype ColumnInfo = ColumnInfo {
-    unCI :: (Int, String, String, Bool, Int, Int)
+    unCI :: (Int, Text, Text, Bool, Maybe Int, Int)
   }
 
 instance FromRow ColumnInfo where
   fromRow = ColumnInfo <$> fromRow
 
+metadataTable, tilesTable :: Text
 metadataTable = "metadata"
 tilesTable = "tiles"
 
+metadataColumns, tilesColumns :: [Text]
 metadataColumns = [
     "name"
   , "value"
