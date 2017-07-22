@@ -1,7 +1,7 @@
 name:                mbtiles
-version:             0.1.0.0
-synopsis:            Haskell MBTiles client
-description:         Reads MBTiles files.
+version:             0.2.0.0
+synopsis:            Haskell MBTiles client.
+description:         Read and manipulate MBTiles files and associated metadata.
 homepage:            https://github.com/caneroj1/mbtiles#readme
 license:             BSD3
 license-file:        LICENSE

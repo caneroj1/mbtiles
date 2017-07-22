@@ -1,3 +1,19 @@
+{-|
+Module      : Database.Mbtiles
+Description : Haskell MBTiles client.
+Copyright   : (c) Joe Canero, 2017
+License     : BSD3
+Maintainer  : jmc41493@gmail.com
+Stability   : experimental
+Portability : POSIX
+
+This module provides support for reading, writing, and updating
+an mbtiles database. There is also functionality for reading
+metadata from the database.
+
+See the associated README.md for basic usage examples.
+-}
+
 {-# LANGUAGE OverloadedStrings #-}
 
 module Database.Mbtiles
@@ -10,6 +26,10 @@ module Database.Mbtiles
 , Z(..)
 , X(..)
 , Y(..)
+
+  -- * Typeclasses
+, ToTile(..)
+, FromTile(..)
 
   -- * The MbtilesT monad transformer
 , runMbtilesT

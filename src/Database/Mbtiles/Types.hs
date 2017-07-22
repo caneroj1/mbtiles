@@ -40,7 +40,7 @@ newtype MbtilesT m a = MbtilesT {
 instance (MonadIO m) => MonadIO (MbtilesT m) where
   liftIO = MbtilesT . liftIO
 
--- | Type specialization 'MbtilesT' to IO.
+-- | Type specialization of 'MbtilesT' to IO.
 type Mbtiles a = MbtilesT IO a
 
 -- | Newtype wrapper around map zoom level.
