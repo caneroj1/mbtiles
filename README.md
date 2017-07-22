@@ -2,6 +2,8 @@
 
 Haskell library for interfacing with MapBox [MBTiles](https://github.com/mapbox/mbtiles-spec) files.
 
+Documentation available on [Hackage](https://hackage.haskell.org/package/mbtiles).
+
 ## Functionality
 * Getting tiles by zoom, x, and y.
 * Writing new tiles by zoom, x, and y.
