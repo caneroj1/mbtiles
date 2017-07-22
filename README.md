@@ -32,12 +32,13 @@ Getting metadata:
 ```haskell
 
 import Control.Monad.IO.Class
+import Database.Mbtiles
 
 main = do
   runMbtiles "my/path/to/file.mbtiles" $ do
-    liftIO $ print =<< getName
-    liftIO $ print =<< getType
-    liftIO $ print =<< getFormat
+    liftIO . print =<< getName
+    liftIO . print =<< getType
+    liftIO . print =<< getFormat
 
 ```
 
