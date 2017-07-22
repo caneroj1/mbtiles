@@ -13,16 +13,25 @@ data SqlData = SqlData {
   , conn :: Connection
   }
 
+-- | MbtilesT monad that will run actions on an MBTiles file.
 newtype MbtilesT m a = MbtilesT {
     unMbtilesT :: ReaderT SqlData m a
   } deriving (Functor, Applicative, Monad)
 
+-- | Type specialization 'MbtilesT' to IO.
 type Mbtiles a = MbtilesT IO a
 
+-- | Newtype wrapper around map zoom level.
 newtype Zoom = Z Int deriving ToField
+
+-- | Newtype wrapper around a tile's x-coordinate.
 newtype X = X Int deriving ToField
+
+-- | Newtype wrapper around a tile's y-coordinate.
 newtype Y = Y Int deriving ToField
 
+-- | Typeclass representing data types that can be turned
+-- into a lazy ByteString and stored as tile data.
 class ToTile a where
   toTile :: a -> BL.ByteString
 
@@ -32,6 +41,8 @@ instance ToTile BS.ByteString where
 instance ToTile BL.ByteString where
   toTile = id
 
+-- | Typeclass representing data types intp which raw tile data can
+-- be converted.
 class FromTile a where
   fromTile :: BL.ByteString -> a
 
