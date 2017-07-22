@@ -3,6 +3,7 @@
 
 module Database.Mbtiles.Types where
 
+import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
@@ -35,6 +36,9 @@ data MBTilesError = DoesNotExist    -- ^ The MBTiles file does not exist.
 newtype MbtilesT m a = MbtilesT {
     unMbtilesT :: ReaderT MbtilesData m a
   } deriving (Functor, Applicative, Monad, MonadTrans)
+
+instance (MonadIO m) => MonadIO (MbtilesT m) where
+  liftIO = MbtilesT . liftIO
 
 -- | Type specialization 'MbtilesT' to IO.
 type Mbtiles a = MbtilesT IO a

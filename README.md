@@ -6,8 +6,11 @@ Haskell library for interfacing with MapBox [MBTiles](https://github.com/mapbox/
 * Getting tiles by zoom, x, and y.
 * Writing new tiles by zoom, x, and y.
 * Updating existing tiles by zoom, x, and y.
+* Accessing metadata from the mbtiles file.
 
 ## Basic Usage
+
+Reading, writing, and updating tiles:
 
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
@@ -22,7 +25,19 @@ main = do
     case maybeTileData of
       Nothing  -> writeTile (Z 0) (X 0) (Y 0) myData
       (Just d) -> updateTile (Z 0) (X 0) (Y 0) $ BL.init d
+```
 
+Getting metadata:
+
+```haskell
+
+import Control.Monad.IO.Class
+
+main = do
+  runMbtiles "my/path/to/file.mbtiles" $ do
+    liftIO $ print =<< getName
+    liftIO $ print =<< getType
+    liftIO $ print =<< getFormat
 
 ```
 
