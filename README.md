@@ -29,3 +29,4 @@ main = do
 ## Future Work
 * Improve database error handling.
 * Investigate usage as a performant tile server.
+* Add tests.
