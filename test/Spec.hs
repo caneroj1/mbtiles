@@ -1,2 +1,13 @@
+module Main where
+
+import           Control.Monad
+import           Test.HUnit.Base
+import           Test.HUnit.Text
+import           Validation
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = void $ runTestTT $ TestList [
+    TestCase validateFileDetection
+  , TestCase validateSchema
+  , TestCase validateMetadata
+  ]

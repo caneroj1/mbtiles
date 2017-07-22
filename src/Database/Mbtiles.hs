@@ -55,14 +55,19 @@ validateMBTiles :: (MonadIO m) => FilePath -> m (Either MBTilesError Connection)
 validateMBTiles mbtilesPath = liftIO $
   doesFileExist mbtilesPath >>=
   ifExistsOpen              >>=
-  validateDB
+  validator schema          >>=
+  validator metadata        >>=
+  validator tiles
   where
     ifExistsOpen False = return $ Left DoesNotExist
     ifExistsOpen True  = Right <$> open mbtilesPath
-    validateDB = either (return . Left) checkSchema
-    checkSchema c = do
-      valid <- mconcat $ map (fmap All) [doesTableExist c "tiles", doesTableExist c "metadata"]
+
+    schema c = do
+      valid <- mconcat $ map (fmap All) [doesTableExist c tilesTable, doesTableExist c metadataTable]
       if getAll valid then return $ Right c else return $ Left InvalidSchema
+
+    metadata = columnChecker metadataTable metadataColumns InvalidMetadata
+    tiles = columnChecker tilesTable tilesColumns InvalidTiles
 
 -- | Specialized version of 'runMbtilesT' to run in the IO monad.
 runMbtiles :: FilePath -> Mbtiles a -> IO (Either MBTilesError a)

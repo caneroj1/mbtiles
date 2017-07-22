@@ -1,7 +1,9 @@
 module Database.Mbtiles.Utility where
 
 import           Control.Monad.IO.Class
+import           Data.List
 import           Database.Mbtiles.Query
+import           Database.Mbtiles.Types
 import           Database.SQLite.Simple
 
 openStmt :: (MonadIO m) => Connection -> Query -> m Statement
@@ -18,6 +20,32 @@ closeConn = liftIO . close
 
 doesTableExist :: (MonadIO m) => Connection -> String -> m Bool
 doesTableExist conn tableName =
-  not . null <$> liftIO tableQuery
+  checkResults <$> liftIO tableQuery
   where tableQuery :: IO [Only Int]
         tableQuery = query conn tableExistsQuery (Only tableName)
+        checkResults []            = False
+        checkResults (Only r : ls) = r > 0
+
+getColumnNames :: (MonadIO m) => Connection -> String -> m [String]
+getColumnNames conn tableName =
+  sort . map (snd6 . unCI) <$> liftIO columnInfoQuery
+  where columnInfoQuery = query conn tableInfoQuery (Only tableName)
+
+snd6 :: (a, b, c, d, e, f) -> b
+snd6 (_, b, _, _, _, _) = b
+
+validator :: (MonadIO m)
+          => (Connection -> m (Either MBTilesError Connection))
+          -> Either MBTilesError Connection
+          -> m (Either MBTilesError Connection)
+validator = either (return . Left)
+
+columnChecker :: (MonadIO m)
+              => String
+              -> [String]
+              -> MBTilesError
+              -> Connection
+              -> m (Either MBTilesError Connection)
+columnChecker tableName cols err conn = do
+  cs <- getColumnNames conn tableName
+  if cs /= cols then return $ Left err else return $ Right conn

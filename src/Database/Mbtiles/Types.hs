@@ -7,6 +7,7 @@ import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BL
 import           Database.SQLite.Simple         (Connection, Statement)
+import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.ToField
 
 data SqlData = SqlData {
@@ -15,9 +16,11 @@ data SqlData = SqlData {
   }
 
 -- | Data type representing various errors that could occur
--- when opening an MBTiles file.
-data MBTilesError = DoesNotExist  -- ^ The MBTiles file does not exist.
-                  | InvalidSchema -- ^ The MBTiles schema is invalid according to the spec.
+-- when opening and validating an MBTiles file.
+data MBTilesError = DoesNotExist    -- ^ The MBTiles file does not exist.
+                  | InvalidSchema   -- ^ The MBTiles schema is invalid according to the spec.
+                  | InvalidMetadata -- ^ The MBTiles 'metadata' table is invalid.
+                  | InvalidTiles    -- ^ The MBTiles 'tiles' table is invaid.
                   deriving (Show, Eq)
 
 -- | MbtilesT monad that will run actions on an MBTiles file.
@@ -58,3 +61,26 @@ instance FromTile BS.ByteString where
 
 instance FromTile BL.ByteString where
   fromTile = id
+
+newtype ColumnInfo = ColumnInfo {
+    unCI :: (Int, String, String, Bool, Int, Int)
+  }
+
+instance FromRow ColumnInfo where
+  fromRow = ColumnInfo <$> fromRow
+
+metadataTable = "metadata"
+tilesTable = "tiles"
+
+metadataColumns = [
+    "name"
+  , "value"
+  ]
+
+tilesColumns = [
+    "tile_column"
+  , "tile_data"
+  , "tile_row"
+  , "zoom_level"
+  ]
+
