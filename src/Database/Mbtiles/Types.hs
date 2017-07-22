@@ -3,6 +3,7 @@
 module Database.Mbtiles.Types where
 
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BL
 import           Database.SQLite.Simple         (Connection, Statement)
@@ -22,7 +23,7 @@ data MBTilesError = DoesNotExist  -- ^ The MBTiles file does not exist.
 -- | MbtilesT monad that will run actions on an MBTiles file.
 newtype MbtilesT m a = MbtilesT {
     unMbtilesT :: ReaderT SqlData m a
-  } deriving (Functor, Applicative, Monad)
+  } deriving (Functor, Applicative, Monad, MonadTrans)
 
 -- | Type specialization 'MbtilesT' to IO.
 type Mbtiles a = MbtilesT IO a

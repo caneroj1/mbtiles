@@ -24,6 +24,7 @@ library
                      , bytestring
                      , directory
                      , mtl
+                     , transformers
   default-language:    Haskell2010
 
 test-suite mbtiles-test
