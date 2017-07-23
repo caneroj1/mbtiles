@@ -41,7 +41,7 @@ instance (MonadIO m) => MonadIO (MbtilesT m) where
   liftIO = MbtilesT . liftIO
 
 -- | Type specialization of 'MbtilesT' to IO.
-type Mbtiles a = MbtilesT IO a
+type MbtilesIO a = MbtilesT IO a
 
 -- | Newtype wrapper around map zoom level.
 newtype Z = Z Int deriving ToField

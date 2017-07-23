@@ -20,7 +20,7 @@ module Database.Mbtiles
 (
   -- * Types
   MbtilesT
-, Mbtiles
+, MbtilesIO
 , MbtilesMeta
 , MBTilesError(..)
 , Z(..)
@@ -116,7 +116,7 @@ validateMBTiles mbtilesPath = liftIO $
         else return $ Left InvalidMetadata
 
 -- | Specialized version of 'runMbtilesT' to run in the IO monad.
-runMbtiles :: FilePath -> Mbtiles a -> IO (Either MBTilesError a)
+runMbtiles :: FilePath -> MbtilesIO a -> IO (Either MBTilesError a)
 runMbtiles = runMbtilesT
 
 -- | Given a 'Z', 'X', and 'Y' parameters, return the corresponding tile data,
