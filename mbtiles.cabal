@@ -1,5 +1,5 @@
 name:                mbtiles
-version:             0.3.0.0
+version:             0.4.0.0
 synopsis:            Haskell MBTiles client.
 description:         Read and manipulate MBTiles files and associated metadata.
 homepage:            https://github.com/caneroj1/mbtiles#readme
@@ -23,7 +23,9 @@ library
                      , sqlite-simple
                      , bytestring
                      , directory
+                     , monad-control
                      , mtl
+                     , resource-pool
                      , text
                      , transformers
                      , unordered-containers

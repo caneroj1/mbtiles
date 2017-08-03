@@ -11,10 +11,15 @@ This module provides support for reading, writing, and updating
 an mbtiles database. There is also functionality for reading
 metadata from the database.
 
+There is also functionality for creating a pool of connections to
+an mbtiles database.
+
 See the associated README.md for basic usage examples.
 -}
 
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
 
 module Database.Mbtiles
 (
@@ -35,6 +40,11 @@ module Database.Mbtiles
 , runMbtilesT
 , runMbtiles
 
+  -- ** Pooling
+, MbtilesPool
+, getMbtilesPool
+, runMbtilesPoolT
+
   -- * Mbtiles read/write functionality
 , getTile
 , writeTile
@@ -54,11 +64,13 @@ module Database.Mbtiles
 import           Control.Monad
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
-import qualified Data.ByteString.Lazy     as BL
-import           Data.HashMap.Strict      ((!))
-import qualified Data.HashMap.Strict      as M hiding ((!))
+import           Control.Monad.Trans.Control
+import qualified Data.ByteString.Lazy        as BL
+import           Data.HashMap.Strict         ((!))
+import qualified Data.HashMap.Strict         as M hiding ((!))
 import           Data.Monoid
-import           Data.Text                (Text)
+import           Data.Pool
+import           Data.Text                   (Text)
 import           Database.Mbtiles.Query
 import           Database.Mbtiles.Types
 import           Database.Mbtiles.Utility
@@ -81,15 +93,37 @@ runMbtilesT mbtilesPath mbt = do
       v <- runReaderT (unMbtilesT mbt) m
       closeAll m
       return $ Right v
-    mkMbtilesData c d =
+
+-- | A pool of connections to an MBTiles database.
+type MbtilesPool = Pool MbtilesData
+
+-- | Given a path to an MBTiles file, create a connection pool
+-- to an MBTiles database. This will perform the same validation as 'runMbtilesT'.
+getMbtilesPool :: (MonadIO m) => FilePath -> m (Either MBTilesError MbtilesPool)
+getMbtilesPool fp = do
+  m <- validateMBTiles fp
+  either (return . Left) (fmap Right . liftIO . buildPool) m
+  where
+    buildPool (_, d) =
+      createPool (openConnection d) closeAll 1 900 1000
+    openConnection d = open fp >>= flip mkMbtilesData d
+
+-- | Given access to an 'MbtilesPool', run an action against that pool.
+runMbtilesPoolT :: (MonadBaseControl IO m) => MbtilesPool -> MbtilesT m a -> m a
+runMbtilesPoolT p mbt = withResource p (runReaderT (unMbtilesT mbt))
+
+type ValidationResult = (Connection, MbtilesMeta)
+
+closeAll :: (MonadIO m) => MbtilesData -> m ()
+closeAll MbtilesData{r = rs, conn = c} =
+      closeStmt rs >> closeConn c
+
+mkMbtilesData :: (MonadIO m) => Connection -> MbtilesMeta -> m MbtilesData
+mkMbtilesData c d =
       MbtilesData <$>
         openStmt c getTileQuery <*>
         pure c                  <*>
         pure d
-    closeAll MbtilesData{r = rs, conn = c} =
-      closeStmt rs >> closeConn c
-
-type ValidationResult = (Connection, MbtilesMeta)
 
 validateMBTiles :: (MonadIO m) => FilePath -> m (Either MBTilesError ValidationResult)
 validateMBTiles mbtilesPath = liftIO $

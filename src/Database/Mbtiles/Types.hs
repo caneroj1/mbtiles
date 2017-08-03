@@ -63,7 +63,7 @@ instance ToTile BS.ByteString where
 instance ToTile BL.ByteString where
   toTile = id
 
--- | Typeclass representing data types intp which raw tile data can
+-- | Typeclass representing data types into which raw tile data can
 -- be converted.
 class FromTile a where
   fromTile :: BL.ByteString -> a
