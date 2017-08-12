@@ -8,11 +8,11 @@ Stability   : experimental
 Portability : POSIX
 
 This module provides support for reading, writing, and updating
-an mbtiles database. There is also functionality for reading
+an mbtiles database, as well as reading
 metadata from the database.
 
-There is also functionality for creating a pool of connections to
-an mbtiles database.
+There is also support for creating a pool of connections to
+an mbtiles database and streaming tiles.
 
 See the associated README.md for basic usage examples.
 -}
@@ -174,7 +174,9 @@ getTile (Z z) (X x) (Y y) = MbtilesT $ do
 
 -- | Create a 'TileStream' data type that will be used to stream tiles
 -- from the MBTiles database. When streaming is complete, you must
--- call 'endTileStream' to clean up the 'TileStream' resource.
+-- call 'endTileStream' to clean up the 'TileStream' resource. Tiles are streamed
+-- from the database in an ordered fashion, where they are sorted by zoom level,
+-- then tile column, then tile row, in ascending order.
 startTileStream :: (MonadIO m) => MbtilesT m TileStream
 startTileStream = MbtilesT $ asks conn >>= liftIO . openTileStream
 
