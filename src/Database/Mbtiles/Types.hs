@@ -63,7 +63,8 @@ data Tile a = Tile {
   }
 
 instance (Show a) => Show (Tile a) where
-  show (Tile tc tr zl td) = show zl ++ "/" ++
+  show (Tile tc tr zl td) = "Tile " ++
+                            show zl ++ "/" ++
                             show tc ++ "/" ++
                             show tr ++ " " ++
                             show td

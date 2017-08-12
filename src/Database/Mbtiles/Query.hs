@@ -13,8 +13,9 @@ getTileQuery = " select tile_data from tiles \
                \ and   tile_row    = :row"
 
 allTilesQuery :: Query
-allTilesQuery = " select zoom_level,     \
-                \ tile_column, tile_row, \
+allTilesQuery = " select tile_column,    \
+                \ tile_row,              \
+                \ zoom_level,            \
                 \ tile_data from tiles   \
                 \ order by zoom_level,   \
                 \ tile_column, tile_row  "
