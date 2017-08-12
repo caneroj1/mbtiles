@@ -31,6 +31,7 @@ module Database.Mbtiles
 , Z(..)
 , X(..)
 , Y(..)
+, Tile(..)
 
   -- * Typeclasses
 , ToTile(..)
@@ -59,6 +60,12 @@ module Database.Mbtiles
 , getVersion
 , getDescription
 , getFormat
+
+  -- * Streaming tiles
+, TileStream
+, startTileStream
+, endTileStream
+, nextTile
 ) where
 
 import           Control.Monad
@@ -164,6 +171,24 @@ getTile (Z z) (X x) (Y y) = MbtilesT $ do
     reset rs
     return res)
   where unwrapTile (Only bs) = fromTile bs
+
+-- | Create a 'TileStream' data type that will be used to stream tiles
+-- from the MBTiles database. When streaming is complete, you must
+-- call 'endTileStream' to clean up the 'TileStream' resource.
+startTileStream :: (MonadIO m) => MbtilesT m TileStream
+startTileStream = MbtilesT $ asks conn >>= liftIO . openTileStream
+
+-- | Close a given 'TileStream' when streaming is complete.
+endTileStream :: (MonadIO m) => TileStream -> MbtilesT m ()
+endTileStream = liftIO . closeTileStream
+
+-- | Reset a 'TileStream' and prepare it to return results via 'nextTile' again.
+resetTileStream :: (MonadIO m) => TileStream -> MbtilesT m ()
+resetTileStream (TileStream ts) = liftIO $ reset ts
+
+-- | Receive the next 'Tile' from the 'TileStream'.
+nextTile :: (MonadIO m, FromTile a) => TileStream -> MbtilesT m (Maybe (Tile a))
+nextTile (TileStream ts) = liftIO $ nextRow ts
 
 -- | Returns the 'MbtilesMeta' that was found in the MBTiles file.
 -- This returns all of the currently available metadata for the MBTiles database.

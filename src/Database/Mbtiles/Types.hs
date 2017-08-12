@@ -52,6 +52,27 @@ newtype X = X Int deriving ToField
 -- | Newtype wrapper around a tile's y-coordinate.
 newtype Y = Y Int deriving ToField
 
+-- | Data type that represents an entire row
+-- from an MBTiles database.
+data Tile a = Tile {
+    tileColumn :: Int -- ^ The column of this tile.
+  , tileRow    :: Int -- ^ The row of this tile.
+  , zoomlevel  :: Int -- ^ The zoom level of this tile.
+  , tileData   :: a   -- ^ The data associated with this tile.
+  }
+
+instance (FromTile a) => FromRow (Tile a) where
+  fromRow = Tile <$>
+              field <*>
+              field <*>
+              field <*>
+              (fromTile <$> field)
+
+-- | A 'TileStream' data type contains information about how to
+-- stream tiles from the MBTiles database and is used in the same
+-- manner as an SQLite prepared statement.
+newtype TileStream = TileStream Statement
+
 -- | Typeclass representing data types that can be turned
 -- into a lazy ByteString and stored as tile data.
 class ToTile a where

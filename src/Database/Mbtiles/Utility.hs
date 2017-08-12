@@ -54,3 +54,9 @@ columnChecker tableName cols err conn = do
 
 getDBMetadata :: (MonadIO m) => Connection -> m MbtilesMeta
 getDBMetadata conn = M.fromList <$> liftIO (query_ conn getMetadataQuery)
+
+openTileStream :: (MonadIO m) => Connection -> m TileStream
+openTileStream conn = TileStream <$> openStmt conn allTilesQuery
+
+closeTileStream :: (MonadIO m) => TileStream -> m ()
+closeTileStream (TileStream s) = closeStmt s

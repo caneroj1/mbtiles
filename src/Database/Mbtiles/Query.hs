@@ -12,6 +12,13 @@ getTileQuery = " select tile_data from tiles \
                \ and   tile_column = :col    \
                \ and   tile_row    = :row"
 
+allTilesQuery :: Query
+allTilesQuery = " select zoom_level,     \
+                \ tile_column, tile_row, \
+                \ tile_data from tiles   \
+                \ order by zoom_level,   \
+                \ tile_column, tile_row  "
+
 updateTileQuery :: Query
 updateTileQuery = " update tiles          \
                   \ set tile_data = ?     \
@@ -20,8 +27,8 @@ updateTileQuery = " update tiles          \
                   \ and   tile_row    = ?"
 
 newTileQuery :: Query
-newTileQuery = " insert into tiles                                         \
-               \ (zoom_level, tile_column, tile_row, tile_data)            \
+newTileQuery = " insert into tiles                              \
+               \ (zoom_level, tile_column, tile_row, tile_data) \
                \ values (?, ?, ?, ?) "
 
 tableExistsQuery :: Query
