@@ -9,6 +9,7 @@ import           Control.Monad.Trans.Class
 import qualified Data.ByteString                as BS
 import qualified Data.ByteString.Lazy           as BL
 import qualified Data.HashMap.Strict            as M
+import           Data.Monoid
 import           Data.Text                      (Text)
 import           Database.SQLite.Simple         (Connection, Statement)
 import           Database.SQLite.Simple.FromRow
@@ -60,6 +61,27 @@ data Tile a = Tile {
   , zoomlevel  :: Int -- ^ The zoom level of this tile.
   , tileData   :: a   -- ^ The data associated with this tile.
   }
+
+instance (Show a) => Show (Tile a) where
+  show (Tile tc tr zl td) = show zl ++ "/" ++
+                            show tc ++ "/" ++
+                            show tr ++ " " ++
+                            show td
+
+instance (Eq a) => Eq (Tile a) where
+  (Tile c1 r1 z1 d1) == (Tile c2 r2 z2 d2) = c1 == c2 &&
+                                             r1 == r2 &&
+                                             z1 == z2 &&
+                                             d1 == d2
+
+instance (Ord a) => Ord (Tile a) where
+  (Tile c1 r1 z1 d1) `compare` (Tile c2 r2 z2 d2) = compare z1 z2 <>
+                                                    compare c1 c2 <>
+                                                    compare r1 r2 <>
+                                                    compare d1 d2
+
+instance Functor Tile where
+  fmap f (Tile c r z d) = Tile c r z $ f d
 
 instance (FromTile a) => FromRow (Tile a) where
   fromRow = Tile <$>
