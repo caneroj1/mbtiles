@@ -1,6 +1,7 @@
 module Database.Mbtiles.Utility where
 
 import           Control.Monad.IO.Class
+import           Data.Bits
 import qualified Data.HashMap.Strict    as M
 import           Data.List
 import           Data.Text              (Text)
@@ -60,3 +61,6 @@ openTileStream conn = TileStream <$> openStmt conn allTilesQuery
 
 closeTileStream :: (MonadIO m) => TileStream -> m ()
 closeTileStream (TileStream s) = closeStmt s
+
+wrapYTMS :: Z -> Y -> Y
+wrapYTMS (Z z) (Y y) = Y $ (1 `shift` z) - 1 - y

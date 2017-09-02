@@ -166,11 +166,12 @@ getTile :: (MonadIO m, FromTile a) => Z -> X -> Y -> MbtilesT m (Maybe a)
 getTile (Z z) (X x) (Y y) = MbtilesT $ do
   rs <- r <$> ask
   fmap unwrapTile <$> liftIO (do
-    bindNamed rs [":zoom" := z, ":col" := x, ":row" := y]
+    bindNamed rs [":zoom" := z, ":col" := x, ":row" := y']
     res <- nextRow rs
     reset rs
     return res)
   where unwrapTile (Only bs) = fromTile bs
+        y' = wrapYTMS (Z z) (Y y)
 
 -- | Create a 'TileStream' data type that will be used to stream tiles
 -- from the MBTiles database. When streaming is complete, you must
@@ -237,12 +238,14 @@ updateTile z x y t = updateTiles [(z, x, y, t)]
 updateTiles :: (MonadIO m, ToTile a) => [(Z, X, Y, a)] -> MbtilesT m ()
 updateTiles = execQueryOnTiles updateTileQuery
 
+-- execute a query on an array of tile coordinates.
+-- need to wrap the Y coordinate, since mbtiles are in TMS.
 execQueryOnTiles :: (MonadIO m, ToTile a) => Query -> [(Z, X, Y, a)] -> MbtilesT m ()
 execQueryOnTiles q ts = MbtilesT $ do
   c <- conn <$> ask
   liftIO $
     executeMany c q $
-      map (\(z, x, y, t) -> (z, z, y, toTile t)) ts
+      map (\(z, x, y, t) -> (z, x, wrapYTMS z y, toTile t)) ts
 
 findMeta :: Text -> MbtilesMeta -> Text
 findMeta t m = m ! t
