@@ -22,11 +22,12 @@ import           Database.Mbtiles
 
 main = do
   let myData = "myTileData" :: BL.ByteString
+  let tile   = Tile (Z 0, X 0, Y 0)
   runMbtiles "my/path/to/file.mbtiles" $ do
-    maybeTileData <- getTile (Z 0) (X 0) (Y 0)
+    maybeTileData <- getTile tile
     case maybeTileData of
-      Nothing  -> writeTile (Z 0) (X 0) (Y 0) myData
-      (Just d) -> updateTile (Z 0) (X 0) (Y 0) $ BL.init d
+      Nothing  -> writeTile tile myData
+      (Just d) -> updateTile tile $ BL.init d
 ```
 
 Getting metadata:

@@ -32,6 +32,7 @@ module Database.Mbtiles
 , X(..)
 , Y(..)
 , Tile(..)
+, DataTile(..)
 
   -- * Typeclasses
 , ToTile(..)
@@ -78,6 +79,7 @@ import qualified Data.HashMap.Strict         as M hiding ((!))
 import           Data.Monoid
 import           Data.Pool
 import           Data.Text                   (Text)
+import           Data.Tile
 import           Database.Mbtiles.Query
 import           Database.Mbtiles.Types
 import           Database.Mbtiles.Utility
@@ -160,10 +162,9 @@ validateMBTiles mbtilesPath = liftIO $
 runMbtiles :: FilePath -> MbtilesIO a -> IO (Either MBTilesError a)
 runMbtiles = runMbtilesT
 
--- | Given a 'Z', 'X', and 'Y' parameters, return the corresponding tile data,
--- if it exists.
-getTile :: (MonadIO m, FromTile a) => Z -> X -> Y -> MbtilesT m (Maybe a)
-getTile (Z z) (X x) (Y y) = MbtilesT $ do
+-- | Given a 'Tile`, return the corresponding tile data, if it exists.
+getTile :: (MonadIO m, FromTile a) => Tile -> MbtilesT m (Maybe a)
+getTile t@(Tile (Z z, X x, Y y)) = MbtilesT $ do
   rs <- r <$> ask
   fmap unwrapTile <$> liftIO (do
     bindNamed rs [":zoom" := z, ":col" := x, ":row" := y']
@@ -171,7 +172,7 @@ getTile (Z z) (X x) (Y y) = MbtilesT $ do
     reset rs
     return res)
   where unwrapTile (Only bs) = fromTile bs
-        y' = wrapYTMS (Z z) (Y y)
+        Tile (_, _, Y y') = flipY t
 
 -- | Create a 'TileStream' data type that will be used to stream tiles
 -- from the MBTiles database. When streaming is complete, you must
@@ -190,7 +191,7 @@ resetTileStream :: (MonadIO m) => TileStream -> MbtilesT m ()
 resetTileStream (TileStream ts) = liftIO $ reset ts
 
 -- | Receive the next 'Tile' from the 'TileStream'.
-nextTile :: (MonadIO m, FromTile a) => TileStream -> MbtilesT m (Maybe (Tile a))
+nextTile :: (MonadIO m, FromTile a) => TileStream -> MbtilesT m (Maybe (DataTile a))
 nextTile (TileStream ts) = liftIO $ nextRow ts
 
 -- | Returns the 'MbtilesMeta' that was found in the MBTiles file.
@@ -220,32 +221,33 @@ getFormat = findMeta "format" <$> getMetadata
 
 -- | Write new tile data to the tile at the specified 'Z', 'X', and 'Y' parameters.
 -- This function assumes that the tile does not already exist.
-writeTile :: (MonadIO m, ToTile a) => Z -> X -> Y -> a -> MbtilesT m ()
-writeTile z x y t = writeTiles [(z, x, y, t)]
+writeTile :: (MonadIO m, ToTile a) => DataTile a -> MbtilesT m ()
+writeTile d = writeTiles [d]
 
 -- | Batch write new tile data to the tile at the specified 'Z', 'X', and 'Y' parameters.
 -- This function assumes that the tiles do not already exist.
-writeTiles :: (MonadIO m, ToTile a) => [(Z, X, Y, a)] -> MbtilesT m ()
+writeTiles :: (MonadIO m, ToTile a) => [DataTile a] -> MbtilesT m ()
 writeTiles = execQueryOnTiles newTileQuery
 
 -- | Update existing tile data for the tile at the specified 'Z', 'X', and 'Y' parameters.
 -- This function assumes that the tile does already exist.
-updateTile :: (MonadIO m, ToTile a) => Z -> X -> Y -> a -> MbtilesT m ()
-updateTile z x y t = updateTiles [(z, x, y, t)]
+updateTile :: (MonadIO m, ToTile a) => DataTile a -> MbtilesT m ()
+updateTile d = updateTiles [d]
 
 -- | Batch update tile data for the tiles at the specified 'Z', 'X', and 'Y' parameters.
 -- This function assumes that the tiles do already exist.
-updateTiles :: (MonadIO m, ToTile a) => [(Z, X, Y, a)] -> MbtilesT m ()
+updateTiles :: (MonadIO m, ToTile a) => [DataTile a] -> MbtilesT m ()
 updateTiles = execQueryOnTiles updateTileQuery
 
 -- execute a query on an array of tile coordinates.
 -- need to wrap the Y coordinate, since mbtiles are in TMS.
-execQueryOnTiles :: (MonadIO m, ToTile a) => Query -> [(Z, X, Y, a)] -> MbtilesT m ()
+execQueryOnTiles :: (MonadIO m, ToTile a) => Query -> [DataTile a] -> MbtilesT m ()
 execQueryOnTiles q ts = MbtilesT $ do
   c <- conn <$> ask
   liftIO $
-    executeMany c q $
-      map (\(z, x, y, t) -> (z, x, wrapYTMS z y, toTile t)) ts
+    executeMany c q $ map mkRow ts
+  where
+    mkRow (DataTile t d) = let Tile (z, x, y) = flipY t in (toTile d, z, x, y)
 
 findMeta :: Text -> MbtilesMeta -> Text
 findMeta t m = m ! t

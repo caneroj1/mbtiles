@@ -29,7 +29,7 @@ updateTileQuery = " update tiles          \
 
 newTileQuery :: Query
 newTileQuery = " insert into tiles                              \
-               \ (zoom_level, tile_column, tile_row, tile_data) \
+               \ (tile_data, zoom_level, tile_column, tile_row) \
                \ values (?, ?, ?, ?) "
 
 tableExistsQuery :: Query

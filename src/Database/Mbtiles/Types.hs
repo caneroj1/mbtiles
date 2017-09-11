@@ -1,17 +1,20 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TupleSections              #-}
 
 module Database.Mbtiles.Types where
 
 import           Control.Monad.IO.Class
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Class
-import qualified Data.ByteString                as BS
-import qualified Data.ByteString.Lazy           as BL
-import qualified Data.HashMap.Strict            as M
+import qualified Data.ByteString                  as BS
+import qualified Data.ByteString.Lazy             as BL
+import qualified Data.HashMap.Strict              as M
 import           Data.Monoid
-import           Data.Text                      (Text)
-import           Database.SQLite.Simple         (Connection, Statement)
+import           Data.Text                        (Text)
+import           Data.Tile
+import           Database.SQLite.Simple           (Connection, Statement)
+import           Database.SQLite.Simple.FromField
 import           Database.SQLite.Simple.FromRow
 import           Database.SQLite.Simple.ToField
 
@@ -44,51 +47,31 @@ instance (MonadIO m) => MonadIO (MbtilesT m) where
 -- | Type specialization of 'MbtilesT' to IO.
 type MbtilesIO a = MbtilesT IO a
 
--- | Newtype wrapper around map zoom level.
-newtype Z = Z Int deriving ToField
-
--- | Newtype wrapper around a tile's x-coordinate.
-newtype X = X Int deriving ToField
-
--- | Newtype wrapper around a tile's y-coordinate.
-newtype Y = Y Int deriving ToField
-
 -- | Data type that represents an entire row
 -- from an MBTiles database.
-data Tile a = Tile {
-    tileColumn :: Int -- ^ The column of this tile.
-  , tileRow    :: Int -- ^ The row of this tile.
-  , zoomlevel  :: Int -- ^ The zoom level of this tile.
-  , tileData   :: a   -- ^ The data associated with this tile.
-  }
+data DataTile a = DataTile Tile a
 
-instance (Show a) => Show (Tile a) where
-  show (Tile tc tr zl td) = "Tile " ++
-                            show zl ++ "/" ++
-                            show tc ++ "/" ++
-                            show tr ++ " " ++
-                            show td
+instance (Show a) => Show (DataTile a) where
+  show (DataTile (Tile (Z z, X x, Y y)) td) =
+    "Tile " ++ show z ++ "/" ++ show x ++ "/" ++
+    show y ++ " " ++ show td
 
-instance (Eq a) => Eq (Tile a) where
-  (Tile c1 r1 z1 d1) == (Tile c2 r2 z2 d2) = c1 == c2 &&
-                                             r1 == r2 &&
-                                             z1 == z2 &&
-                                             d1 == d2
+instance (Eq a) => Eq (DataTile a) where
+  (DataTile t1 d1) == (DataTile t2 d2) = t1 == t2 && d1 == d2
 
-instance (Ord a) => Ord (Tile a) where
-  (Tile c1 r1 z1 d1) `compare` (Tile c2 r2 z2 d2) = compare z1 z2 <>
-                                                    compare c1 c2 <>
-                                                    compare r1 r2 <>
-                                                    compare d1 d2
+instance (Ord a) => Ord (DataTile a) where
+  (DataTile t1 d1) `compare` (DataTile t2 d2) = compare t1 t2 <>
+                                                compare d2 d2
 
-instance Functor Tile where
-  fmap f (Tile c r z d) = Tile c r z $ f d
+instance Functor DataTile where
+  fmap f (DataTile t d) = DataTile t $ f d
 
-instance (FromTile a) => FromRow (Tile a) where
-  fromRow = Tile <$>
-              field <*>
-              field <*>
-              field <*>
+instance (FromTile a) => FromRow (DataTile a) where
+  fromRow = DataTile . Tile <$>
+              ((,,) <$>
+                field <*>
+                field <*>
+                field) <*>
               (fromTile <$> field)
 
 -- | A 'TileStream' data type contains information about how to
@@ -124,6 +107,25 @@ newtype ColumnInfo = ColumnInfo {
 
 instance FromRow ColumnInfo where
   fromRow = ColumnInfo <$> fromRow
+
+-- * Orphan Instances
+instance FromField Z where
+  fromField = fmap Z . fromField
+
+instance FromField X where
+  fromField = fmap X . fromField
+
+instance FromField Y where
+  fromField = fmap Y . fromField
+
+instance ToField Z where
+  toField (Z z) = toField z
+
+instance ToField X where
+  toField (X x) = toField x
+
+instance ToField Y where
+  toField (Y y) = toField y
 
 metadataTable, tilesTable :: Text
 metadataTable = "metadata"
